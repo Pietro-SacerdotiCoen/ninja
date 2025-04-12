@@ -41,9 +41,10 @@ schermoy = 770
 SCREENRECT = pg.Rect(0, 0, schermox, schermoy)
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 IDLE = 0
-RUNNING = 8
-JUMPING = 16
-WALKING = 24
+RUNNING = 1
+JUMPING = 2
+WALKING = 3
+frames = [0, 0, 0, 0, 0]
 
 def load_image(file):
     """loads an image, prepares it for play"""
@@ -121,7 +122,7 @@ class Player(pg.sprite.Sprite):
         pass
     
     def jump (self):
-            if self.current_image > JUMPING + 4:
+            if self.current_image > frames[JUMPING] + 4 and self.current_image < frames[JUMPING] + 8:
                 if self.facing:
                     self.rect[0] += self.velx
                 else:
@@ -144,9 +145,9 @@ class Player(pg.sprite.Sprite):
         else:
             next = IDLE
 
-        if self.mode != next and (self.mode != JUMPING or (self.mode == JUMPING and self.current_image == self.mode)):
+        if self.mode != next and (self.mode != JUMPING or (self.mode == JUMPING and self.current_image == frames[self.mode])):
             self.mode = next
-            self.current_image = next
+            self.current_image = frames[next]
             self.frame = 0
 
         
@@ -157,8 +158,8 @@ class Player(pg.sprite.Sprite):
             self.frame = 0
             self.image = self.images[self.current_image]
             self.current_image += 1
-            if self.current_image >= self.mode + 8:
-                self.current_image = self.mode
+            if self.current_image >= frames[self.mode + 1]:
+                self.current_image = frames[self.mode]
 
             if self.facing:
                 self.image = pg.transform.flip(self.image, 1, 0)
@@ -195,10 +196,14 @@ async def main(winstyle=0):
     Sfondo.images = [pg.transform.scale_by(sfondo_image, 0.72)]
 
     Player.images = []
+    animation = 0
     for y in ["Idle.png", "Run.png", "Jump.png", "Walk.png"]:
         ninjas_idle_sheet = load_image("ninjas/Kunoichi/" + y)
-        for x in range(0, 8):
+        frameno = math.floor(ninjas_idle_sheet.get_width() / 128)
+        frames[animation + 1] = frames[animation] + frameno 
+        for x in range(0, frameno):
             Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, 128, 128, x * 128, 0)), 2))
+        animation += 1
 
 
     # decorate the game window

@@ -89,13 +89,14 @@ class Player(pg.sprite.Sprite):
         self.rect = self.image.get_rect(x = 400, y = 400)
         self.current_image = 0
         self.walk_frame = 0
-        self.velx = 30
-        self.vely = 15
+        self.velx = 15
+        self.vely = 7
         self.directionx = 0
         self.idle_frame = 0
         self.y = 400
         self.mode = IDLE
         self.facing = False
+        self.frame = 0
 
 
     def move(self, all):
@@ -109,11 +110,6 @@ class Player(pg.sprite.Sprite):
         else:
             self.idle()
 
-        self.next_frame()
-
-        if self.mode == JUMPING and self.current_image == self.mode:
-            self.mode = IDLE
-
     def run (self):
 
         self.rect[0] += self.velx * self.directionx
@@ -125,16 +121,17 @@ class Player(pg.sprite.Sprite):
         pass
     
     def jump (self):
-            if self.current_image > 18:
+            if self.current_image > JUMPING + 4:
                 if self.facing:
-                    self.rect[0] += 30
+                    self.rect[0] += self.velx
                 else:
-                    self.rect[0] -= 30
+                    self.rect[0] -= self.velx
 
     def walk (self):
         self.rect[1] += self.vely * self.directiony
 
     def input(self, keystate, all):
+
         self.directionx = (keystate[pg.K_d] - keystate[pg.K_a])
         self.directiony = (keystate[pg.K_s] - keystate[pg.K_w])
 
@@ -147,21 +144,26 @@ class Player(pg.sprite.Sprite):
         else:
             next = IDLE
 
-        if self.mode != next and self.mode != JUMPING:
+        if self.mode != next and (self.mode != JUMPING or (self.mode == JUMPING and self.current_image == self.mode)):
             self.mode = next
             self.current_image = next
+            self.frame = 0
 
         
 
 
     def next_frame (self):
-        self.image = self.images[self.current_image]
-        self.current_image += 1
-        if self.current_image >= self.mode + 8:
-            self.current_image = self.mode
+        if self.frame % 5 == 0:
+            self.frame = 0
+            self.image = self.images[self.current_image]
+            self.current_image += 1
+            if self.current_image >= self.mode + 8:
+                self.current_image = self.mode
 
-        if self.facing:
-            self.image = pg.transform.flip(self.image, 1, 0)
+            if self.facing:
+                self.image = pg.transform.flip(self.image, 1, 0)
+
+        self.frame += 1
 
 class Sfondo(pg.sprite.Sprite):
     """to keep track of the score."""
@@ -221,7 +223,6 @@ async def main(winstyle=0):
     pg.display.flip()
 
     while player1.alive:
-    
         # get input
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -234,6 +235,7 @@ async def main(winstyle=0):
         
         player1.input(keystate, all)
         player1.move(all)
+        player1.next_frame()
         
         # clear/erase the last drawn sprites
         background = pg.Surface(SCREENRECT.size)

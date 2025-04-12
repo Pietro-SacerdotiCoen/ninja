@@ -189,12 +189,12 @@ async def main(winstyle=0):
 
     # Load images, assign to sprite classes
     # (do this before the classes are used, after screen setup)
-    sfondo_image = pg.image.load("sfondi/PNG/Battleground2/Bright/Battleground2.png")
+    sfondo_image = load_image("sfondi/PNG/Battleground2/Bright/Battleground2.png")
     Sfondo.images = [pg.transform.scale_by(sfondo_image, 0.72)]
 
     Player.images = []
     for y in ["Idle.png", "Run.png", "Jump.png", "Walk.png"]:
-        ninjas_idle_sheet = pg.image.load("ninjas/Kunoichi/" + y)
+        ninjas_idle_sheet = load_image("ninjas/Kunoichi/" + y)
         for x in range(0, 8):
             Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, 128, 128, x * 128, 0)), 2))
 

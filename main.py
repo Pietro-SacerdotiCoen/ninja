@@ -68,8 +68,8 @@ def load_sound(file):
         print(f"Warning, unable to load, {file}")
     return None
 
-def get_image(sheet, width, heigth, startx, starty):
-    image = pg.Surface.subsurface(sheet,pg.Rect(startx, starty, 128, 128))
+def get_image(sheet, startx, starty, frame_size):
+    image = pg.Surface.subsurface(sheet,pg.Rect(startx, starty, frame_size, frame_size))
     return image
 
 
@@ -196,13 +196,14 @@ async def main(winstyle=0):
     Sfondo.images = [pg.transform.scale_by(sfondo_image, 0.72)]
 
     Player.images = []
+    frame_size = 128
     animation = 0
     for y in ["Idle.png", "Run.png", "Jump.png", "Walk.png"]:
         ninjas_idle_sheet = load_image("ninjas/Kunoichi/" + y)
-        frameno = math.floor(ninjas_idle_sheet.get_width() / 128)
+        frameno = math.floor(ninjas_idle_sheet.get_width() / frame_size)
         frames[animation + 1] = frames[animation] + frameno 
         for x in range(0, frameno):
-            Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, 128, 128, x * 128, 0)), 2))
+            Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, x * frame_size, 0, frame_size)), 2))
         animation += 1
 
 

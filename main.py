@@ -44,7 +44,10 @@ IDLE = 0
 RUNNING = 1
 JUMPING = 2
 WALKING = 3
-frames = [0, 0, 0, 0, 0]
+ATTACKING = 4
+atomic = [JUMPING, ATTACKING]
+anim_speed = [5, 5, 5, 5, 3]
+frames = [0, 0, 0, 0, 0, 0]
 
 def load_image(file):
     """loads an image, prepares it for play"""
@@ -69,7 +72,7 @@ def load_sound(file):
     return None
 
 def get_image(sheet, startx, starty, frame_size):
-    image = pg.Surface.subsurface(sheet,pg.Rect(startx, starty, frame_size, frame_size))
+    image = pg.Surface.subsurface(sheet,pg.Rect(startx + 4, starty, frame_size - 4, frame_size))
     return image
 
 
@@ -104,6 +107,8 @@ class Player(pg.sprite.Sprite):
 
         if self.mode == JUMPING:
             self.jump()
+        elif self.mode == ATTACKING:
+            self.attack()
         elif self.mode == RUNNING:
             self.run()
         elif self.mode == WALKING:
@@ -121,23 +126,28 @@ class Player(pg.sprite.Sprite):
     def idle (self):
         pass
     
-    def jump (self):
+    def jump(self):
             if self.current_image > frames[JUMPING] + 4 and self.current_image < frames[JUMPING] + 8:
                 if self.facing:
                     self.rect[0] += self.velx
                 else:
                     self.rect[0] -= self.velx
 
-    def walk (self):
+    def walk(self):
         self.rect[1] += self.vely * self.directiony
+
+    def attack(self):
+        pass
 
     def input(self, keystate, all):
 
         self.directionx = (keystate[pg.K_d] - keystate[pg.K_a])
         self.directiony = (keystate[pg.K_s] - keystate[pg.K_w])
 
-        if keystate[pg.K_SPACE] == 1:
+        if keystate[pg.K_k] == 1:
             next = JUMPING
+        elif keystate[pg.K_l] == 1:
+            next = ATTACKING
         elif self.directionx != 0:
             next = RUNNING
         elif self.directiony != 0:
@@ -145,7 +155,7 @@ class Player(pg.sprite.Sprite):
         else:
             next = IDLE
 
-        if self.mode != next and (self.mode != JUMPING or (self.mode == JUMPING and self.current_image == frames[self.mode])):
+        if self.mode != next and (self.mode not in atomic or (self.mode in atomic and self.current_image == frames[self.mode])):
             self.mode = next
             self.current_image = frames[next]
             self.frame = 0
@@ -154,7 +164,7 @@ class Player(pg.sprite.Sprite):
 
 
     def next_frame (self):
-        if self.frame % 5 == 0:
+        if self.frame % anim_speed[self.mode] == 0:
             self.frame = 0
             self.image = self.images[self.current_image]
             self.current_image += 1
@@ -198,13 +208,17 @@ async def main(winstyle=0):
     Player.images = []
     frame_size = 128
     animation = 0
-    for y in ["Idle.png", "Run.png", "Jump.png", "Walk.png"]:
-        ninjas_idle_sheet = load_image("ninjas/Kunoichi/" + y)
-        frameno = math.floor(ninjas_idle_sheet.get_width() / frame_size)
-        frames[animation + 1] = frames[animation] + frameno 
-        for x in range(0, frameno):
-            Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, x * frame_size, 0, frame_size)), 2))
+    for y in [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"]]:
+        frameno_sum = 0
+        for i in y:
+            ninjas_idle_sheet = load_image("ninjas/Kunoichi/" + i)
+            frameno = math.floor(ninjas_idle_sheet.get_width() / frame_size)
+            frameno_sum += frameno
+            for x in range(0, frameno):
+                Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, x * frame_size, 0, frame_size)), 2))
+        frames[animation + 1] = frames[animation] + frameno_sum
         animation += 1
+
 
 
     # decorate the game window

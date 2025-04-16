@@ -231,6 +231,16 @@ class Sfondo(pg.sprite.Sprite):
         self.image = self.images[0]
         self.rect = self.image.get_rect(x = 0, y = 0)
 
+class YAwareGroup(pg.sprite.Group):
+    def by_y(self, spr):
+        return spr.rect[1]
+
+    def draw(self, surface):
+        sprites = self.sprites()
+        surface_blit = surface.blit
+        for spr in sorted(sprites, key=self.by_y):
+            self.spritedict[spr] = surface_blit(spr.image, spr.rect)
+        self.lostsprites = []
 
 async def main(winstyle=0):
     # Initialize pygame
@@ -259,8 +269,8 @@ async def main(winstyle=0):
     pg.mouse.set_visible(0)
 
     # Initialize Game Groups
-    all = pg.sprite.RenderUpdates()
-    
+    #all = pg.sprite.RenderUpdates()
+    all = YAwareGroup()    
 
     # Create Some Starting Values
     clock = pg.time.Clock()
@@ -309,8 +319,8 @@ async def main(winstyle=0):
         # draw the scene
         dirty = all.draw(screen)
         #pg.draw.rect(screen, (255, 0, 0), player1.rect, width = 1)
-        pg.display.update(dirty)
-
+        #pg.display.update(dirty)
+        pg.display.flip()
 
 
         # cap the framerate at 40fps. Also called 40HZ or 40 times per second.

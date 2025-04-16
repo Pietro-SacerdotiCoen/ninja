@@ -45,9 +45,11 @@ RUNNING = 1
 JUMPING = 2
 WALKING = 3
 ATTACKING = 4
-atomic = [JUMPING, ATTACKING]
-anim_speed = [5, 5, 5, 5, 3]
-frames = [0, 0, 0, 0, 0, 0]
+DYING = 5
+HURT = 6
+atomic = [JUMPING, ATTACKING, DYING, HURT]
+anim_speed = [7, 4, 4, 3, 3, 10, 10]
+frames = [0, 0, 0, 0, 0, 0, 0, 0]
 
 def load_image(file):
     """loads an image, prepares it for play"""
@@ -92,20 +94,25 @@ class Player(pg.sprite.Sprite):
         self.image = self.images[0]
         self.rect = self.image.get_rect(x = 400, y = 400)
         self.current_image = 0
-        self.walk_frame = 0
         self.velx = 15
         self.vely = 7
         self.directionx = 0
-        self.idle_frame = 0
         self.y = 400
         self.mode = IDLE
         self.facing = False
         self.frame = 0
+        self.health = 100
+        self.lasthealth = self.health
+        self.dead = False
 
 
     def move(self, all):
 
-        if self.mode == JUMPING:
+        if self.mode == DYING:
+            self.die()
+        elif self.mode == HURT:
+            self.hurt()
+        elif self.mode == JUMPING:
             self.jump()
         elif self.mode == ATTACKING:
             self.attack()
@@ -115,6 +122,8 @@ class Player(pg.sprite.Sprite):
             self.walk()
         else:
             self.idle()
+
+        self.lasthealth = self.health
 
     def run (self):
 
@@ -139,23 +148,37 @@ class Player(pg.sprite.Sprite):
     def attack(self):
         pass
 
+    def die(self):
+        pass
+
+    def hurt(self):
+        pass
+
     def input(self, keystate, all):
 
-        self.directionx = (keystate[pg.K_d] - keystate[pg.K_a])
-        self.directiony = (keystate[pg.K_s] - keystate[pg.K_w])
-
-        if keystate[pg.K_k] == 1:
-            next = JUMPING
-        elif keystate[pg.K_l] == 1:
-            next = ATTACKING
-        elif self.directionx != 0:
-            next = RUNNING
-        elif self.directiony != 0:
-            next = WALKING
+        if self.mode == DYING and self.current_image == frames[self.mode]:        
+            self.dead = True
+    
+        if self.health <= 0:
+            next = DYING
+        elif self.lasthealth > self.health:
+            next = HURT
         else:
-            next = IDLE
+            self.directionx = (keystate[pg.K_d] - keystate[pg.K_a])
+            self.directiony = (keystate[pg.K_s] - keystate[pg.K_w])
 
-        if self.mode != next and (self.mode not in atomic or (self.mode in atomic and self.current_image == frames[self.mode])):
+            if keystate[pg.K_k] == 1:
+                next = JUMPING
+            elif keystate[pg.K_l] == 1:
+                next = ATTACKING
+            elif self.directionx != 0:
+                next = RUNNING
+            elif self.directiony != 0:
+                next = WALKING
+            else:
+                next = IDLE
+
+        if self.mode != next and ((self.mode not in atomic or (self.mode in atomic and self.current_image == frames[self.mode])) or next == DYING or next == HURT):
             self.mode = next
             self.current_image = frames[next]
             self.frame = 0
@@ -208,7 +231,7 @@ async def main(winstyle=0):
     Player.images = []
     frame_size = 128
     animation = 0
-    for y in [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"]]:
+    for y in [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"]]:
         frameno_sum = 0
         for i in y:
             ninjas_idle_sheet = load_image("ninjas/Kunoichi/" + i)
@@ -242,7 +265,7 @@ async def main(winstyle=0):
     screen.blit(screen_backup, (0, 0))
     pg.display.flip()
 
-    while player1.alive:
+    while player1.alive and player1.dead == False:
         # get input
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -252,7 +275,7 @@ async def main(winstyle=0):
 
                 
         keystate = pg.key.get_pressed()
-        
+
         player1.input(keystate, all)
         player1.move(all)
         player1.next_frame()

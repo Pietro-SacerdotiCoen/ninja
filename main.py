@@ -84,7 +84,7 @@ def get_image(sheet, startx, starty, frame_size):
 # since it is passed extra information about the keyboard.
 
 
-class Player(pg.sprite.Sprite):
+class Character(pg.sprite.Sprite):
     """Representing the player1 as a moon buggy type car."""
     anim_speed = [7, 4, 4, 3, 3, 10, 10]
     frames = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -201,21 +201,23 @@ class Player(pg.sprite.Sprite):
 
         self.frame += 1
 
-def player_init():
-    Player.images = []
+def player_init(classe):
+    classe.images = []
     frame_size = 128
     animation = 0
-    for y in Player.sprites_names:
+    for y in classe.sprites_names:
         frameno_sum = 0
         for i in y:
-            ninjas_idle_sheet = load_image(Player.sprites_directory + i)
+            ninjas_idle_sheet = load_image(classe.sprites_directory + i)
             frameno = math.floor(ninjas_idle_sheet.get_width() / frame_size)
             frameno_sum += frameno
             for x in range(0, frameno):
-                Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, x * frame_size, 0, frame_size)), 2))
-        Player.frames[animation + 1] = Player.frames[animation] + frameno_sum
+                classe.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, x * frame_size, 0, frame_size)), 2))
+        classe.frames[animation + 1] = classe.frames[animation] + frameno_sum
         animation += 1
 
+class Player(Character):
+    pass
 class Sfondo(pg.sprite.Sprite):
     """to keep track of the score."""
 
@@ -245,7 +247,7 @@ async def main(winstyle=0):
     sfondo_image = load_image("sfondi/PNG/Battleground2/Bright/Battleground2.png")
     Sfondo.images = [pg.transform.scale_by(sfondo_image, 0.72)]
 
-    player_init()
+    player_init(Player)
 
     # decorate the game window
     pg.mouse.set_visible(0)

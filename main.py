@@ -86,10 +86,6 @@ def get_image(sheet, startx, starty, frame_size):
 
 class Character(pg.sprite.Sprite):
     """Representing the player1 as a moon buggy type car."""
-    anim_speed = [7, 4, 4, 3, 3, 10, 10]
-    frames = [0, 0, 0, 0, 0, 0, 0, 0]
-    sprites_names = [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"]]
-    sprites_directory = "ninjas/Kunoichi/"
     
     def __init__(self, *groups):
         pg.sprite.Sprite.__init__(self, *groups)
@@ -217,7 +213,16 @@ def player_init(classe):
         animation += 1
 
 class Player(Character):
-    pass
+    anim_speed = [7, 4, 4, 3, 3, 10, 10]
+    frames = [0, 0, 0, 0, 0, 0, 0, 0]
+    sprites_names = [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"]]
+    sprites_directory = "ninjas/Kunoichi/"
+
+class Skeleton(Character):
+    anim_speed = [7, 4, 3, 3, 10, 10]
+    frames = [0, 0, 0, 0, 0, 0, 0]
+    sprites_names = [["Idle.png"], ["Run.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png", "Attack_3.png"], ["Dead.png"], ["Hurt.png"]]
+    sprites_directory = "scheletri/Skeleton_Warrior/"
 class Sfondo(pg.sprite.Sprite):
     """to keep track of the score."""
 
@@ -248,6 +253,7 @@ async def main(winstyle=0):
     Sfondo.images = [pg.transform.scale_by(sfondo_image, 0.72)]
 
     player_init(Player)
+    player_init(Skeleton)
 
     # decorate the game window
     pg.mouse.set_visible(0)
@@ -262,7 +268,8 @@ async def main(winstyle=0):
     # initialize our starting sprites
     sfondo = Sfondo(all)
     player1 = Player(all)
-
+    scheletro = Skeleton(all)
+    scheletro.rect[0] = 600
 
     # Run our main loop whilst the player1 is alive.
     screen_backup = screen.copy()
@@ -284,6 +291,10 @@ async def main(winstyle=0):
         player1.input(keystate, all)
         player1.move(all)
         player1.next_frame()
+
+        #scheletro.input(keystate, all)
+        scheletro.move(all)
+        scheletro.next_frame()
         
         # clear/erase the last drawn sprites
         background = pg.Surface(SCREENRECT.size)

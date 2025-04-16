@@ -48,8 +48,6 @@ ATTACKING = 4
 DYING = 5
 HURT = 6
 atomic = [JUMPING, ATTACKING, DYING, HURT]
-anim_speed = [7, 4, 4, 3, 3, 10, 10]
-frames = [0, 0, 0, 0, 0, 0, 0, 0]
 
 def load_image(file):
     """loads an image, prepares it for play"""
@@ -88,7 +86,11 @@ def get_image(sheet, startx, starty, frame_size):
 
 class Player(pg.sprite.Sprite):
     """Representing the player1 as a moon buggy type car."""
-
+    anim_speed = [7, 4, 4, 3, 3, 10, 10]
+    frames = [0, 0, 0, 0, 0, 0, 0, 0]
+    sprites_names = [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"]]
+    sprites_directory = "ninjas/Kunoichi/"
+    
     def __init__(self, *groups):
         pg.sprite.Sprite.__init__(self, *groups)
         self.image = self.images[0]
@@ -136,7 +138,7 @@ class Player(pg.sprite.Sprite):
         pass
     
     def jump(self):
-            if self.current_image > frames[JUMPING] + 4 and self.current_image < frames[JUMPING] + 8:
+            if self.current_image > self.frames[JUMPING] + 4 and self.current_image < self.frames[JUMPING] + 8:
                 if self.facing:
                     self.rect[0] += self.velx
                 else:
@@ -156,7 +158,7 @@ class Player(pg.sprite.Sprite):
 
     def input(self, keystate, all):
 
-        if self.mode == DYING and self.current_image == frames[self.mode]:        
+        if self.mode == DYING and self.current_image == self.frames[self.mode]:        
             self.dead = True
     
         if self.health <= 0:
@@ -178,26 +180,41 @@ class Player(pg.sprite.Sprite):
             else:
                 next = IDLE
 
-        if self.mode != next and ((self.mode not in atomic or (self.mode in atomic and self.current_image == frames[self.mode])) or next == DYING or next == HURT):
+        if self.mode != next and ((self.mode not in atomic or (self.mode in atomic and self.current_image == self.frames[self.mode])) or next == DYING or next == HURT):
             self.mode = next
-            self.current_image = frames[next]
+            self.current_image = self.frames[next]
             self.frame = 0
 
         
 
 
     def next_frame (self):
-        if self.frame % anim_speed[self.mode] == 0:
+        if self.frame % self.anim_speed[self.mode] == 0:
             self.frame = 0
             self.image = self.images[self.current_image]
             self.current_image += 1
-            if self.current_image >= frames[self.mode + 1]:
-                self.current_image = frames[self.mode]
+            if self.current_image >= self.frames[self.mode + 1]:
+                self.current_image = self.frames[self.mode]
 
             if self.facing:
                 self.image = pg.transform.flip(self.image, 1, 0)
 
         self.frame += 1
+
+def player_init():
+    Player.images = []
+    frame_size = 128
+    animation = 0
+    for y in Player.sprites_names:
+        frameno_sum = 0
+        for i in y:
+            ninjas_idle_sheet = load_image(Player.sprites_directory + i)
+            frameno = math.floor(ninjas_idle_sheet.get_width() / frame_size)
+            frameno_sum += frameno
+            for x in range(0, frameno):
+                Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, x * frame_size, 0, frame_size)), 2))
+        Player.frames[animation + 1] = Player.frames[animation] + frameno_sum
+        animation += 1
 
 class Sfondo(pg.sprite.Sprite):
     """to keep track of the score."""
@@ -228,21 +245,7 @@ async def main(winstyle=0):
     sfondo_image = load_image("sfondi/PNG/Battleground2/Bright/Battleground2.png")
     Sfondo.images = [pg.transform.scale_by(sfondo_image, 0.72)]
 
-    Player.images = []
-    frame_size = 128
-    animation = 0
-    for y in [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"]]:
-        frameno_sum = 0
-        for i in y:
-            ninjas_idle_sheet = load_image("ninjas/Kunoichi/" + i)
-            frameno = math.floor(ninjas_idle_sheet.get_width() / frame_size)
-            frameno_sum += frameno
-            for x in range(0, frameno):
-                Player.images.append(pg.transform.scale_by((get_image(ninjas_idle_sheet, x * frame_size, 0, frame_size)), 2))
-        frames[animation + 1] = frames[animation] + frameno_sum
-        animation += 1
-
-
+    player_init()
 
     # decorate the game window
     pg.mouse.set_visible(0)

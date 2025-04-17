@@ -92,8 +92,6 @@ class Character(pg.sprite.Sprite):
         self.image = self.images[0]
         self.rect = self.image.get_rect(x = 400, y = 400)
         self.current_image = 0
-        self.velx = 15
-        self.vely = 7
         self.directionx = 0
         self.y = 400
         self.mode = IDLE
@@ -152,7 +150,7 @@ class Character(pg.sprite.Sprite):
     def hurt(self):
         pass
 
-    def input(self, keystate, all):
+    def input(self, keystate, player):
 
         if self.mode == DYING and self.current_image == self.frames[self.mode]:        
             self.dead = True
@@ -162,27 +160,12 @@ class Character(pg.sprite.Sprite):
         elif self.lasthealth > self.health:
             next = HURT
         else:
-            self.directionx = (keystate[pg.K_d] - keystate[pg.K_a])
-            self.directiony = (keystate[pg.K_s] - keystate[pg.K_w])
-
-            if keystate[pg.K_k] == 1:
-                next = JUMPING
-            elif keystate[pg.K_l] == 1:
-                next = ATTACKING
-            elif self.directionx != 0:
-                next = RUNNING
-            elif self.directiony != 0:
-                next = WALKING
-            else:
-                next = IDLE
+            next = self.choose_move(keystate, player)
 
         if self.mode != next and ((self.mode not in atomic or (self.mode in atomic and self.current_image == self.frames[self.mode])) or next == DYING or next == HURT):
             self.mode = next
             self.current_image = self.frames[next]
             self.frame = 0
-
-        
-
 
     def next_frame (self):
         if self.frame % self.anim_speed[self.mode] == 0:
@@ -217,12 +200,65 @@ class Player(Character):
     frames = [0, 0, 0, 0, 0, 0, 0, 0]
     sprites_names = [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"]]
     sprites_directory = "ninjas/Kunoichi/"
+    velx = 15
+    vely = 7
 
+    def choose_move(self, keystate, player1):
+        self.directionx = (keystate[pg.K_d] - keystate[pg.K_a])
+        self.directiony = (keystate[pg.K_s] - keystate[pg.K_w])
+
+        if keystate[pg.K_k] == 1:
+            next = JUMPING
+        elif keystate[pg.K_l] == 1:
+            next = ATTACKING
+        elif self.directionx != 0:
+            next = RUNNING
+        elif self.directiony != 0:
+            next = WALKING
+        else:
+            next = IDLE
+
+        return next
 class Skeleton(Character):
-    anim_speed = [7, 4, 3, 3, 10, 10]
-    frames = [0, 0, 0, 0, 0, 0, 0]
-    sprites_names = [["Idle.png"], ["Run.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png", "Attack_3.png"], ["Dead.png"], ["Hurt.png"]]
+    anim_speed = [7, 5, 0, 3, 3, 10, 10]
+    frames = [0, 0, 0, 0, 0, 0, 0, 0]
+    sprites_names = [["Idle.png"], ["Run.png"], [], ["Walk.png"], ["Attack_1.png", "Attack_2.png", "Attack_3.png"], ["Dead.png"], ["Hurt.png"]]
     sprites_directory = "scheletri/Skeleton_Warrior/"
+    velx = 10
+    vely = 5
+
+    def choose_move(self, keystate, player):
+        side = self.rect[0] < player.rect[0]
+        if side:
+            side = -1
+        else:
+            side = 1
+        distx = abs(player.rect[0] - self.rect[0] + 70 * side)
+        disty = abs(player.rect[1] - self.rect[1])
+        if distx > 600:
+            next = IDLE
+        elif distx <= 10 and disty <= 10:
+            if self.mode != ATTACKING:
+                self.facing = side == 1
+            next = ATTACKING
+        else:
+            next = RUNNING
+            self.directiony = 0
+            if distx > 10:
+                if self.rect[0] < player.rect[0] + 70 * side:
+                    self.directionx = 1
+                else:
+                    self.directionx = -1
+            else:
+                self.directionx = 0
+            if disty > 10:
+                if self.rect[1] < player.rect[1]:
+                    self.directiony = 1
+                else:
+                    self.directiony = -1
+            else:
+                self.directiony = 0
+        return next
 class Sfondo(pg.sprite.Sprite):
     """to keep track of the score."""
 
@@ -298,11 +334,11 @@ async def main(winstyle=0):
                 
         keystate = pg.key.get_pressed()
 
-        player1.input(keystate, all)
+        player1.input(keystate, player1)
         player1.move(all)
         player1.next_frame()
 
-        #scheletro.input(keystate, all)
+        scheletro.input(keystate, player1)
         scheletro.move(all)
         scheletro.next_frame()
         

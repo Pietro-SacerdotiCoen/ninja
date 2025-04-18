@@ -103,7 +103,7 @@ class Character(pg.sprite.Sprite):
         self.dead = False
         self.running_time = 0
 
-    def update(self, keystate, player1):
+    def update(self, keystate, player1, enemies):
         self.input(keystate, player1)
         self.move()
         self.next_frame()
@@ -202,6 +202,18 @@ class Character(pg.sprite.Sprite):
 
         self.frame += 1
 
+    def collides(self, player):
+        collide = False
+
+        if ( player.mode != HURT and player.mode != DYING and
+            (self.mode == ATTACKING and self.current_image - self.frames[self.mode] in self.att_times or
+            self.mode == RUN_ATTACK and self.current_image - self.frames[self.mode] in self.run_att_times)):
+            if not self.facing:
+                collide = player.rect[0] - self.rect[0] > 0 and abs(player.rect[0] - self.rect[0] - self.att_range) <= 15
+            else:
+                collide = player.rect[0] - self.rect[0] < 0 and abs(player.rect[0] - self.rect[0] + self.att_range) <= 15
+        return collide
+    
 def player_init(classe):
     classe.images = []
     frame_size = 128
@@ -224,6 +236,15 @@ class Player(Character):
     sprites_directory = "ninjas/Kunoichi/"
     velx = 15
     vely = 7
+    att_range = 70
+    att_times = [2, 6]
+    damage = 10
+
+    def update(self, keystate, player, enemies):
+        super().update(keystate, player, enemies)
+        for x in enemies:
+            if self.collides(x):
+                x.health -= self.damage
 
     def choose_move(self, keystate, player1):
         self.directionx = (keystate[pg.K_d] - keystate[pg.K_a])
@@ -244,22 +265,10 @@ class Player(Character):
 
 class Enemy(Character):
 
-    def update(self, keystate, player):
-        super().update(keystate, player)
+    def update(self, keystate, player, enemies):
+        super().update(keystate, player, enemies)
         if self.collides(player):
             player.health -= self.damage
-
-    def collides(self, player):
-        collide = False
-
-        if ( player.mode != HURT and player.mode != DYING and
-            (self.mode == ATTACKING and self.current_image - self.frames[self.mode] in self.att_times or
-            self.mode == RUN_ATTACK and self.current_image - self.frames[self.mode] in self.run_att_times)):
-            if not self.facing:
-                collide = player.rect[0] - self.rect[0] > 0 and abs(player.rect[0] - self.rect[0] - self.att_range) <= 15
-            else:
-                collide = player.rect[0] - self.rect[0] < 0 and abs(player.rect[0] - self.rect[0] + self.att_range) <= 15
-        return collide
 class Skeleton1(Enemy):
     anim_speed = [7, 5, 0, 8, 3, 10, 10, 5]
     frames = [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -441,6 +450,7 @@ async def main(winstyle=0):
     # Initialize Game Groups
     #all = pg.sprite.RenderUpdates()
     all = YAwareGroup()    
+    enemies = pg.sprite.Group()
 
     # Create Some Starting Values
     clock = pg.time.Clock()
@@ -448,9 +458,9 @@ async def main(winstyle=0):
     # initialize our starting sprites
     sfondo = Sfondo(all)
     player1 = Player(all)
-    scheletro = Skeleton2(all)
+    scheletro = Skeleton2(all, enemies)
     scheletro.rect[0] = 600
-    scheletro2 = Skeleton1(all)
+    scheletro2 = Skeleton1(all, enemies)
     scheletro2.rect[0] = 800
 
     # Run our main loop whilst the player1 is alive.
@@ -471,7 +481,7 @@ async def main(winstyle=0):
         keystate = pg.key.get_pressed()
         
         # clear/erase the last drawn sprites
-        all.update(keystate, player1)
+        all.update(keystate, player1, enemies)
         
         background = pg.Surface(SCREENRECT.size)
         all.clear(screen, background)

@@ -103,8 +103,11 @@ class Character(pg.sprite.Sprite):
         self.dead = False
         self.running_time = 0
 
-
-    def move(self, all):
+    def update(self, keystate, player1):
+        self.input(keystate, player1)
+        self.move()
+        self.next_frame()
+    def move(self):
 
         if self.mode == DYING:
             self.die()
@@ -240,6 +243,12 @@ class Player(Character):
         return next
 
 class Enemy(Character):
+
+    def update(self, keystate, player):
+        super().update(keystate, player)
+        if self.collides(player):
+            player.health -= self.damage
+
     def collides(self, player):
         collide = False
 
@@ -423,6 +432,7 @@ async def main(winstyle=0):
     Sfondo.images = [pg.transform.scale_by(sfondo_image, 0.72)]
 
     player_init(Player)
+    player_init(Skeleton1)
     player_init(Skeleton2)
 
     # decorate the game window
@@ -440,6 +450,8 @@ async def main(winstyle=0):
     player1 = Player(all)
     scheletro = Skeleton2(all)
     scheletro.rect[0] = 600
+    scheletro2 = Skeleton1(all)
+    scheletro2.rect[0] = 800
 
     # Run our main loop whilst the player1 is alive.
     screen_backup = screen.copy()
@@ -457,26 +469,15 @@ async def main(winstyle=0):
 
                 
         keystate = pg.key.get_pressed()
-
-        player1.input(keystate, player1)
-        player1.move(all)
-        player1.next_frame()
-    
-        scheletro.input(keystate, player1)
-        scheletro.move(all)
-        scheletro.next_frame()
-        if scheletro.collides(player1):
-            player1.health -= scheletro.damage
-            print(player1.health, scheletro.current_image)
         
         # clear/erase the last drawn sprites
+        all.update(keystate, player1)
+        
         background = pg.Surface(SCREENRECT.size)
         all.clear(screen, background)
 
         # update all the sprites
-        all.update()
         # handle player1 input
-        
         #player1.input(coins, meteoriti, keystate, 0, all)
 
         # draw the scene

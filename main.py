@@ -170,7 +170,7 @@ class Character(pg.sprite.Sprite):
         self.rect[0] += self.velx * dir
 
     def input(self, keystate, player):
-
+        
         if self.mode == DYING and self.current_image == self.frames[self.mode]:        
             self.dead = True
     
@@ -215,7 +215,7 @@ def player_init(classe):
         animation += 1
 
 class Player(Character):
-    anim_speed = [7, 4, 4, 3, 3, 10, 10, 5]
+    anim_speed = [7, 4, 4, 3, 3, 10, 20, 5]
     frames = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     sprites_names = [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"], []]
     sprites_directory = "ninjas/Kunoichi/"
@@ -238,14 +238,29 @@ class Player(Character):
             next = IDLE
 
         return next
-class Skeleton1(Character):
+
+class Enemy(Character):
+    def collides(self, player):
+        collide = False
+
+        if ( player.mode != HURT and player.mode != DYING and
+            (self.mode == ATTACKING and self.current_image - self.frames[self.mode] in self.att_times or
+            self.mode == RUN_ATTACK and self.current_image - self.frames[self.mode] in self.run_att_times)):
+            if not self.facing:
+                collide = player.rect[0] - self.rect[0] > 0 and abs(player.rect[0] - self.rect[0] - self.att_range) <= 15
+            else:
+                collide = player.rect[0] - self.rect[0] < 0 and abs(player.rect[0] - self.rect[0] + self.att_range) <= 15
+        return collide
+class Skeleton1(Enemy):
     anim_speed = [7, 5, 0, 8, 3, 10, 10, 5]
     frames = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     sprites_names = [["Idle.png"], ["Run.png"], [], ["Walk.png"], ["Attack_1.png", "Attack_2.png", "Attack_3.png"], ["Dead.png"], ["Hurt.png"], []]
     sprites_directory = "scheletri/Skeleton_Warrior/"
     velx = 7
     vely = 3
-
+    att_range = 70
+    att_times = [2, 6]
+    damage = 10
     def __init__(self, *groups):
         super().__init__(*groups)
         self.idle_frame = 0
@@ -301,13 +316,17 @@ class Skeleton1(Character):
                 self.directiony = 0
         return next
 
-class Skeleton2(Character):
+class Skeleton2(Enemy):
     anim_speed = [7, 5, 0, 8, 3, 10, 10, 5]
     frames = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     sprites_names = [["Idle.png"], ["Run.png"], [], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"], ["Run+attack.png"]]
     sprites_directory = "scheletri/Skeleton_Spearman/"
     velx = 10
     vely = 5
+    att_range = 70
+    att_times = [2, 6]
+    run_att_times = [1, 2, 3]
+    damage = 10
 
     def __init__(self, *groups):
         super().__init__(*groups)
@@ -442,10 +461,13 @@ async def main(winstyle=0):
         player1.input(keystate, player1)
         player1.move(all)
         player1.next_frame()
-
+    
         scheletro.input(keystate, player1)
         scheletro.move(all)
         scheletro.next_frame()
+        if scheletro.collides(player1):
+            player1.health -= scheletro.damage
+            print(player1.health, scheletro.current_image)
         
         # clear/erase the last drawn sprites
         background = pg.Surface(SCREENRECT.size)

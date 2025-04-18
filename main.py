@@ -47,7 +47,8 @@ WALKING = 3
 ATTACKING = 4
 DYING = 5
 HURT = 6
-atomic = [JUMPING, ATTACKING, DYING, HURT]
+RUN_ATTACK = 7
+atomic = [JUMPING, ATTACKING, DYING, HURT, RUN_ATTACK]
 
 def load_image(file):
     """loads an image, prepares it for play"""
@@ -100,6 +101,7 @@ class Character(pg.sprite.Sprite):
         self.health = 100
         self.lasthealth = self.health
         self.dead = False
+        self.running_time = 0
 
 
     def move(self, all):
@@ -116,18 +118,27 @@ class Character(pg.sprite.Sprite):
             self.run()
         elif self.mode == WALKING:
             self.walk()
+        elif self.mode == RUN_ATTACK:
+            self.run_attack()
         else:
             self.idle()
 
         self.lasthealth = self.health
 
+        self.rect.bottom = min(max(self.rect.bottom, 440),726)
+        self.rect.left = min(max(self.rect.left, 0),1000)
+
+        if self.mode == RUNNING:
+            self.running_time += 1
+        else:
+            self.running_time = 0
     def run (self):
 
         self.rect[0] += self.velx * self.directionx
         self.rect[1] += self.vely * self.directiony
 
         self.facing = self.directionx < 0
-    
+
     def idle (self):
         pass
     
@@ -140,6 +151,7 @@ class Character(pg.sprite.Sprite):
 
     def walk(self):
         self.rect[1] += self.vely * self.directiony
+        self.rect[0] += self.velx * self.directionx / 2
 
     def attack(self):
         pass
@@ -149,6 +161,13 @@ class Character(pg.sprite.Sprite):
 
     def hurt(self):
         pass
+
+    def run_attack(self):
+        if self.facing == 0:
+            dir = 1.3
+        else:
+            dir = -1.3
+        self.rect[0] += self.velx * dir
 
     def input(self, keystate, player):
 
@@ -196,9 +215,9 @@ def player_init(classe):
         animation += 1
 
 class Player(Character):
-    anim_speed = [7, 4, 4, 3, 3, 10, 10]
-    frames = [0, 0, 0, 0, 0, 0, 0, 0]
-    sprites_names = [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"]]
+    anim_speed = [7, 4, 4, 3, 3, 10, 10, 5]
+    frames = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    sprites_names = [["Idle.png"], ["Run.png"], ["Jump.png"], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"], []]
     sprites_directory = "ninjas/Kunoichi/"
     velx = 15
     vely = 7
@@ -219,13 +238,17 @@ class Player(Character):
             next = IDLE
 
         return next
-class Skeleton(Character):
-    anim_speed = [7, 5, 0, 3, 3, 10, 10]
-    frames = [0, 0, 0, 0, 0, 0, 0, 0]
-    sprites_names = [["Idle.png"], ["Run.png"], [], ["Walk.png"], ["Attack_1.png", "Attack_2.png", "Attack_3.png"], ["Dead.png"], ["Hurt.png"]]
+class Skeleton1(Character):
+    anim_speed = [7, 5, 0, 8, 3, 10, 10, 5]
+    frames = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    sprites_names = [["Idle.png"], ["Run.png"], [], ["Walk.png"], ["Attack_1.png", "Attack_2.png", "Attack_3.png"], ["Dead.png"], ["Hurt.png"], []]
     sprites_directory = "scheletri/Skeleton_Warrior/"
-    velx = 10
-    vely = 5
+    velx = 7
+    vely = 3
+
+    def __init__(self, *groups):
+        super().__init__(*groups)
+        self.idle_frame = 0
 
     def choose_move(self, keystate, player):
         side = self.rect[0] < player.rect[0]
@@ -236,7 +259,89 @@ class Skeleton(Character):
         distx = abs(player.rect[0] - self.rect[0] + 70 * side)
         disty = abs(player.rect[1] - self.rect[1])
         if distx > 600:
-            next = IDLE
+            self.idle_frame += 1
+            if self.idle_frame < 60:
+                next = IDLE
+            elif self.idle_frame < 90:
+                next = WALKING
+                self.directionx = 1
+                self.directiony = 0
+                self.facing = False
+            elif self.idle_frame < 150:
+                next = IDLE  
+            elif self.idle_frame < 180:
+                next = WALKING
+                self.directionx = -1
+                self.directiony = 0
+                self.facing = True
+            else:
+                next = IDLE
+                self.idle_frame = 0
+
+        elif distx <= 10 and disty <= 10:
+            if self.mode != ATTACKING:
+                self.facing = side == 1
+            next = ATTACKING
+        else:
+            next = RUNNING
+            self.directiony = 0
+            if distx > 10:
+                if self.rect[0] < player.rect[0] + 70 * side:
+                    self.directionx = 1
+                else:
+                    self.directionx = -1
+            else:
+                self.directionx = 0
+            if disty > 10:
+                if self.rect[1] < player.rect[1]:
+                    self.directiony = 1
+                else:
+                    self.directiony = -1
+            else:
+                self.directiony = 0
+        return next
+
+class Skeleton2(Character):
+    anim_speed = [7, 5, 0, 8, 3, 10, 10, 5]
+    frames = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    sprites_names = [["Idle.png"], ["Run.png"], [], ["Walk.png"], ["Attack_1.png", "Attack_2.png"], ["Dead.png"], ["Hurt.png"], ["Run+attack.png"]]
+    sprites_directory = "scheletri/Skeleton_Spearman/"
+    velx = 10
+    vely = 5
+
+    def __init__(self, *groups):
+        super().__init__(*groups)
+        self.idle_frame = 0
+
+    def choose_move(self, keystate, player):
+        side = self.rect[0] < player.rect[0]
+        if side:
+            side = -1
+        else:
+            side = 1
+        distx = abs(player.rect[0] - self.rect[0] + 70 * side)
+        disty = abs(player.rect[1] - self.rect[1])
+        if distx > 600:
+            self.idle_frame += 1
+            if self.idle_frame < 60:
+                next = IDLE
+            elif self.idle_frame < 90:
+                next = WALKING
+                self.directionx = 1
+                self.directiony = 0
+                self.facing = False
+            elif self.idle_frame < 150:
+                next = IDLE  
+            elif self.idle_frame < 180:
+                next = WALKING
+                self.directionx = -1
+                self.directiony = 0
+                self.facing = True
+            else:
+                next = IDLE
+                self.idle_frame = 0
+        elif distx <= 120 and disty <= 10 and (self.mode == RUNNING or self.mode == RUN_ATTACK) and self.running_time > 30:
+            next = RUN_ATTACK
         elif distx <= 10 and disty <= 10:
             if self.mode != ATTACKING:
                 self.facing = side == 1
@@ -299,7 +404,7 @@ async def main(winstyle=0):
     Sfondo.images = [pg.transform.scale_by(sfondo_image, 0.72)]
 
     player_init(Player)
-    player_init(Skeleton)
+    player_init(Skeleton2)
 
     # decorate the game window
     pg.mouse.set_visible(0)
@@ -314,7 +419,7 @@ async def main(winstyle=0):
     # initialize our starting sprites
     sfondo = Sfondo(all)
     player1 = Player(all)
-    scheletro = Skeleton(all)
+    scheletro = Skeleton2(all)
     scheletro.rect[0] = 600
 
     # Run our main loop whilst the player1 is alive.
